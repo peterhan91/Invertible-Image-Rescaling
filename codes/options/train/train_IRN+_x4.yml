@@ -15,8 +15,10 @@ datasets:
   train:
     name: DIV2K
     mode: LQGT
-    dataroot_GT: ~ # path to training HR images
-    dataroot_LQ: ~ # path to training reference LR images, not necessary, if not provided, LR images will be generated in dataloader
+    dataroot_GT: /media/tianyu.han/mri-scratch/DeepLearning/MRKnee/Images_train/
+    # path to training HR images
+    dataroot_LQ: 
+    # path to training reference LR images, not necessary, if not provided, LR images will be generated in dataloader
 
     use_shuffle: true
     n_workers: 6  # per GPU
@@ -29,8 +31,10 @@ datasets:
   val:
     name: val_DIV2K
     mode: LQGT
-    dataroot_GT: ~ # path to validation HR images
-    dataroot_LQ: ~ # path to validation reference LR images, not necessary, if not provided, LR images will be generated in dataloader
+    dataroot_GT: /media/tianyu.han/mri-scratch/DeepLearning/MRKnee/Images_test/
+    # path to validation HR images
+    dataroot_LQ: 
+    # path to validation reference LR images, not necessary, if not provided, LR images will be generated in dataloader
 
 
 #### network structures
@@ -53,7 +57,7 @@ network_D:
 #### path
 
 path:
-  pretrain_model_G: ../experiments/pretrained_models/IRN_x4.pth
+  pretrain_model_G: ~
   strict_load: true
   resume_state: ~
 
