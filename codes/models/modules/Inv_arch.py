@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+from data.fastmri import transforms
+
 
 class InvBlockExp(nn.Module):
     def __init__(self, subnet_constructor, channel_num, channel_split_num, clamp=1.):
@@ -84,17 +86,61 @@ class HaarDownsampling(nn.Module):
         return self.last_jac
 
 
+class FourierDownsampling(nn.Module):
+    def __init__(self, mask_func, seed):
+        super(FourierDownsampling, self).__init__()
+        self.mask_func = mask_func
+        self.seed = seed
+
+    def forward(self, x, rev=False):
+        if x.size(-1) != 1:
+            img = torch.stack((x, torch.zeros_like(x)), -1)
+        assert img.size(-1) == 2
+        
+        if not rev:
+            self.elements = x.shape[1] * x.shape[2] * x.shape[3]
+            self.last_jac = self.elements / 2 * np.log(1/4.)
+            
+            # x shape [bs, ch, H, W] e.g. [16, 1, 144, 144]
+            kspace = transforms.fft2(img) # [bs, ch, H, W, 2]
+            center_kspace, _ = transforms.apply_mask(kspace, self.mask_func, 
+                                                    seed=self.seed, cuda=True)
+            periph_kspace, _ = transforms.apply_mask(kspace, self.mask_func, 
+                                                    rev=True, seed=self.seed, cuda=True)
+            img_LF = transforms.complex_abs(transforms.ifft2(center_kspace)) # [bs, ch, H, W]
+            img_HF = transforms.complex_abs(transforms.ifft2(periph_kspace)) 
+            return torch.cat((img_LF, img_HF), dim=1) # [bs, ch*2, H, W]
+        else:
+            self.elements = x.shape[1] * x.shape[2] * x.shape[3]
+            self.last_jac = self.elements / 2 * np.log(4.)
+            
+            # if rev: img shape [bs, ch*2, H, W, 2]
+            center_kspace = transforms.fft2(img.narrow(1, 0, 1)) # shape   
+            periph_kspace = transforms.fft2(img.narrow(1, 1, 2)) # shape [bs, ch, H, W, 2]
+            out = transforms.complex_abs(transforms.ifft2(center_kspace + periph_kspace))
+            return out  # [bs, ch, H, W]
+
+    def jacobian(self, x, rev=False):
+        return self.last_jac
+
+
 class InvRescaleNet(nn.Module):
-    def __init__(self, channel_in=3, channel_out=3, subnet_constructor=None, block_num=[], down_num=2):
+    def __init__(self, channel_in=3, channel_out=3, subnet_constructor=None, 
+                    block_num=[], down_num=2, Haar=True, mask_func=None, seed=None):
         super(InvRescaleNet, self).__init__()
 
         operations = []
 
         current_channel = channel_in
         for i in range(down_num):
-            b = HaarDownsampling(current_channel)
+            if Haar:
+                b = HaarDownsampling(current_channel)
+                current_channel *= 4
+            else:
+                b = FourierDownsampling(mask_func, seed)
+                current_channel *= 2
             operations.append(b)
-            current_channel *= 4
+
             for j in range(block_num[i]):
                 b = InvBlockExp(subnet_constructor, current_channel, channel_out)
                 operations.append(b)

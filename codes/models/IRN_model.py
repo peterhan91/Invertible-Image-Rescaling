@@ -80,7 +80,9 @@ class IRNModel(BaseModel):
 
     def feed_data(self, data):
         self.ref_L = data['LQ'].to(self.device)  # LQ
+        print('Feeded L shape is: ', self.ref_L.shape)
         self.real_H = data['GT'].to(self.device)  # GT
+        print('Feeded H shape is: ', self.real_H.shape)
 
     def gaussian_batch(self, dims):
         return torch.randn(tuple(dims)).to(self.device)
@@ -107,8 +109,10 @@ class IRNModel(BaseModel):
         # forward downscaling
         self.input = self.real_H
         self.output = self.netG(x=self.input)
+        print('output shape is: ', self.output.shape)
 
         zshape = self.output[:, 3:, :, :].shape
+        print('zshape is: ', zshape)
         LR_ref = self.ref_L.detach()
 
         l_forw_fit, l_forw_ce = self.loss_forward(self.output[:, :3, :, :], LR_ref, self.output[:, 3:, :, :])

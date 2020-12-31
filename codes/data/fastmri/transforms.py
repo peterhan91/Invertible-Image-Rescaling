@@ -22,10 +22,10 @@ def to_tensor(data):
     """
     if np.iscomplexobj(data):
         data = np.stack((data.real, data.imag), axis=-1)
-    return torch.from_numpy(data)
+    return torch.from_numpy(np.ascontiguousarray(data)).float()
 
 
-def apply_mask(data, mask_func, rev=False, seed=None):
+def apply_mask(data, mask_func, rev=False, seed=None, cuda=False):
     """
     Subsample given k-space by multiplying with a mask.
 
@@ -45,10 +45,17 @@ def apply_mask(data, mask_func, rev=False, seed=None):
     shape = np.array(data.shape)
     shape[:-3] = 1
     mask = mask_func(shape, seed)
-    if not rev:
-        return torch.where(mask == 0, torch.Tensor([0]), data), mask
+    if cuda:
+        mask = mask.cuda()
+        if not rev:
+            return torch.where(mask == 0, torch.Tensor([0]).cuda(), data), mask
+        else:
+            return torch.where(mask != 0, torch.Tensor([0]).cuda(), data), mask
     else:
-        return torch.where(mask == 1, torch.Tensor([0]), data), mask
+        if not rev:
+            return torch.where(mask == 0, torch.Tensor([0]), data), mask
+        else:
+            return torch.where(mask != 0, torch.Tensor([0]), data), mask
 
 
 def fft2(data):

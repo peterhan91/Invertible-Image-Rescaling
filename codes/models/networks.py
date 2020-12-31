@@ -4,6 +4,7 @@ import models.modules.discriminator_vgg_arch as SRGAN_arch
 from models.modules.Inv_arch import *
 from models.modules.Subnet_constructor import subnet
 import math
+from data.fastmri import subsample
 logger = logging.getLogger('base')
 
 
@@ -20,8 +21,14 @@ def define_G(opt):
         init = 'xavier'
 
     down_num = int(math.log(opt_net['scale'], 2))
+    mask_func = subsample.RandomMaskFunc(
+                    center_fractions=[0.08],
+                    accelerations=[4]
+                    )
 
-    netG = InvRescaleNet(opt_net['in_nc'], opt_net['out_nc'], subnet(subnet_type, init), opt_net['block_num'], down_num)
+    netG = InvRescaleNet(opt_net['in_nc'], opt_net['out_nc'], 
+                        subnet(subnet_type, init), opt_net['block_num'], 
+                        down_num, False, mask_func, opt_net['seed'])
 
     return netG
 
