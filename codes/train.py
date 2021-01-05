@@ -215,8 +215,8 @@ def main():
                     crop_size = opt['scale']
                     gt_img = gt_img / 255.
                     sr_img = sr_img / 255.
-                    cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size, :]
-                    cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size, :]
+                    cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size]
+                    cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size]
                     avg_psnr += util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
 
                 avg_psnr = avg_psnr / idx

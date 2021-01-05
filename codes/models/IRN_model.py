@@ -80,9 +80,9 @@ class IRNModel(BaseModel):
 
     def feed_data(self, data):
         self.ref_L = data['LQ'].to(self.device)  # LQ
-        print('Feeded L shape is: ', self.ref_L.shape)
+        # print('Feeded L shape is: ', self.ref_L.shape)
         self.real_H = data['GT'].to(self.device)  # GT
-        print('Feeded H shape is: ', self.real_H.shape)
+        # print('Feeded H shape is: ', self.real_H.shape)
 
     def gaussian_batch(self, dims):
         return torch.randn(tuple(dims)).to(self.device)
@@ -97,7 +97,7 @@ class IRNModel(BaseModel):
 
     def loss_backward(self, x, y):
         x_samples = self.netG(x=y, rev=True)
-        x_samples_image = x_samples[:, :3, :, :]
+        x_samples_image = x_samples[:, :1, :, :]
         l_back_rec = self.train_opt['lambda_rec_back'] * self.Reconstruction_back(x, x_samples_image)
 
         return l_back_rec
@@ -109,16 +109,16 @@ class IRNModel(BaseModel):
         # forward downscaling
         self.input = self.real_H
         self.output = self.netG(x=self.input)
-        print('output shape is: ', self.output.shape)
+        # print('output shape is: ', self.output.shape)
 
-        zshape = self.output[:, 3:, :, :].shape
-        print('zshape is: ', zshape)
+        zshape = self.output[:, 1:, :, :].shape
+        # print('zshape is: ', zshape)
         LR_ref = self.ref_L.detach()
 
-        l_forw_fit, l_forw_ce = self.loss_forward(self.output[:, :3, :, :], LR_ref, self.output[:, 3:, :, :])
+        l_forw_fit, l_forw_ce = self.loss_forward(self.output[:, :1, :, :], LR_ref, self.output[:, 1:, :, :])
 
         # backward upscaling
-        LR = self.Quantization(self.output[:, :3, :, :])
+        LR = self.Quantization(self.output[:, :1, :, :])
         gaussian_scale = self.train_opt['gaussian_scale'] if self.train_opt['gaussian_scale'] != None else 1
         y_ = torch.cat((LR, gaussian_scale * self.gaussian_batch(zshape)), dim=1)
 
@@ -153,10 +153,10 @@ class IRNModel(BaseModel):
 
         self.netG.eval()
         with torch.no_grad():
-            self.forw_L = self.netG(x=self.input)[:, :3, :, :]
+            self.forw_L = self.netG(x=self.input)[:, :1, :, :]
             self.forw_L = self.Quantization(self.forw_L)
             y_forw = torch.cat((self.forw_L, gaussian_scale * self.gaussian_batch(zshape)), dim=1)
-            self.fake_H = self.netG(x=y_forw, rev=True)[:, :3, :, :]
+            self.fake_H = self.netG(x=y_forw, rev=True)[:, :1, :, :]
 
         self.netG.train()
 

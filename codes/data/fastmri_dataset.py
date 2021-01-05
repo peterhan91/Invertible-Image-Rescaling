@@ -58,9 +58,11 @@ class FASTMRIDataset(data.Dataset):
         # modcrop in the validation / test phase
         if self.opt['phase'] != 'train':
             img_GT = util.modcrop(img_GT, scale)
+            # print('val img_GT shape: ', img_GT.shape)
         # change color space if necessary
         if self.opt['color']:
             img_GT = util.channel_convert(img_GT.shape[2], self.opt['color'], [img_GT])[0]
+            # print('img_GT shape: ', img_GT.shape)
         if img_GT.ndim == 2:
             img_GT = np.expand_dims(img_GT, axis=2)
         if self.opt['phase'] == 'train':

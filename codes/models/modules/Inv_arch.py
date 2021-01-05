@@ -116,7 +116,7 @@ class FourierDownsampling(nn.Module):
             
             # if rev: img shape [bs, ch*2, H, W, 2]
             center_kspace = transforms.fft2(img.narrow(1, 0, 1)) # shape   
-            periph_kspace = transforms.fft2(img.narrow(1, 1, 2)) # shape [bs, ch, H, W, 2]
+            periph_kspace = transforms.fft2(img.narrow(1, 1, 1)) # shape [bs, ch, H, W, 2]
             out = transforms.complex_abs(transforms.ifft2(center_kspace + periph_kspace))
             return out  # [bs, ch, H, W]
 
